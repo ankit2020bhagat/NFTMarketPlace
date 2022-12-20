@@ -162,5 +162,14 @@ contract NFTMarketPlace{
         return SellerBalance[seller];
     }
 
+    function getBalance() external view  returns (uint){
+        return address(this).balance;
+    }
+
+    function getSellerBalance(address _seller) external view  returns (uint){
+        return _seller.balance;
+    }
+
+
 
 }
