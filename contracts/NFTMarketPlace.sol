@@ -23,6 +23,8 @@ contract NFTMarketPlace{
          uint price
      );
 
+      event transfer(address indexed from,address indexed to , uint _amount);
+
      mapping (address => mapping (uint => ListNFT)) nftholder;
 
        mapping(address => uint256) private SellerBalance;
@@ -76,6 +78,9 @@ contract NFTMarketPlace{
 
     error NoProceeds();
 
+    ///failed to send
+    error failed();
+
     function listnft(
         address nftAddress,
         uint256 tokenId,
@@ -107,12 +112,22 @@ contract NFTMarketPlace{
         ListNFT memory listedItem = nftholder[nftAddress][tokenId];
         if (msg.value < listedItem.price) {
             revert PriceNotMet(nftAddress, tokenId, listedItem.price);
+
         }
-        SellerBalance[listedItem.seller] += msg.value;
+       // SellerBalance[listedItem.seller] += msg.value;
+       uint amount = (SellerBalance[listedItem.seller]+msg.value * 95) /100;
+
+       (bool succes,) = payable (listedItem.seller).call{value : amount}("");
+       if(!succes){
+           revert failed();
+       }
+        emit transfer(msg.sender,listedItem.seller, amount);
+
        
         delete (nftholder[nftAddress][tokenId]);
         IERC721(nftAddress).safeTransferFrom(listedItem.seller, msg.sender, tokenId);
         emit ItemBought(msg.sender, nftAddress, tokenId, listedItem.price);
+
     }
 
     function updateListing(
@@ -133,15 +148,7 @@ contract NFTMarketPlace{
         emit ItemList(msg.sender, nftAddress, tokenId, newPrice);
     }
 
-    function withdrawProceeds() external {
-        uint256 proceeds = SellerBalance[msg.sender];
-        if (proceeds <= 0) {
-            revert NoProceeds();
-        }
-        SellerBalance[msg.sender] = 0;
-        (bool success, ) = payable(msg.sender).call{value: proceeds}("");
-        require(success, "Transfer failed");
-    }
+    
 
     function getListing(address nftAddress, uint256 tokenId)
         external
