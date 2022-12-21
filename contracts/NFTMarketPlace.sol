@@ -73,8 +73,9 @@ contract NFTMarketPlace{
 
     ///not approve for market place
     error NotApprovedForMarketplace();
-
-    error PriceNotMet(address nftAddress, uint256 tokenId, uint256 price);
+    
+    ///not having enough ether
+    error InsuffiecientBalance(address nftAddress, uint256 tokenId, uint256 price);
 
     error NoProceeds();
 
@@ -111,11 +112,11 @@ contract NFTMarketPlace{
        
         ListNFT memory listedItem = nftholder[nftAddress][tokenId];
         if (msg.value < listedItem.price) {
-            revert PriceNotMet(nftAddress, tokenId, listedItem.price);
+            revert InsuffiecientBalance(nftAddress, tokenId, listedItem.price);
 
         }
-       // SellerBalance[listedItem.seller] += msg.value;
-       uint amount = (SellerBalance[listedItem.seller]+msg.value * 95) /100;
+       
+       uint amount = (msg.value * 95) /100;
 
        (bool succes,) = payable (listedItem.seller).call{value : amount}("");
        if(!succes){
@@ -158,9 +159,7 @@ contract NFTMarketPlace{
         return nftholder[nftAddress][tokenId];
     }
 
-    function getProceeds(address seller) external view returns (uint256) {
-        return SellerBalance[seller];
-    }
+    
 
     function getBalance() external view  returns (uint){
         return address(this).balance;
